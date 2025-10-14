@@ -32,6 +32,7 @@ describe('MCP Server in stdio mode', () => {
     assert.deepStrictEqual(
       toolNames.sort(),
       [
+        'create_new_workspace',
         'create_project',
         'deploy_container_image',
         'deploy_file_contents',

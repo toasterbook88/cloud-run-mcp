@@ -19,6 +19,7 @@ import { z } from 'zod';
 import {
   registerListProjectsTool,
   registerCreateProjectTool,
+  registerCreateNewWorkspaceTool,
   registerListServicesTool,
   registerGetServiceTool,
   registerGetServiceLogTool,
@@ -30,6 +31,7 @@ import {
 export const registerTools = (server, options = {}) => {
   registerListProjectsTool(server, options);
   registerCreateProjectTool(server, options);
+  registerCreateNewWorkspaceTool(server, options);
   registerListServicesTool(server, options);
   registerGetServiceTool(server, options);
   registerGetServiceLogTool(server, options);

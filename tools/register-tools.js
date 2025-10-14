@@ -136,6 +136,60 @@ function registerCreateProjectTool(server, options) {
   );
 }
 
+// Tool to create a new workspace (alias for creating a GCP project)
+function registerCreateNewWorkspaceTool(server, options) {
+  server.registerTool(
+    'create_new_workspace',
+    {
+      description:
+        'Creates a new workspace (GCP project) and attempts to attach it to the first available billing account. A workspace name can be optionally specified; otherwise it will be automatically generated.',
+      inputSchema: {
+        workspaceName: z
+          .string()
+          .optional()
+          .describe(
+            'Optional. The desired name/ID for the new workspace. If not provided, an ID will be auto-generated.'
+          ),
+      },
+    },
+    gcpTool(options.gcpCredentialsAvailable, async ({ workspaceName }) => {
+      if (
+        workspaceName !== undefined &&
+        (typeof workspaceName !== 'string' || workspaceName.trim() === '')
+      ) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Error: If provided, workspace name must be a non-empty string.',
+            },
+          ],
+        };
+      }
+      try {
+        const result = await createProjectAndAttachBilling(workspaceName);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Successfully created workspace with ID "${result.projectId}". You can now use this workspace ID for deployments.`,
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error creating workspace or attaching billing: ${error.message}`,
+            },
+          ],
+        };
+      }
+    })
+  );
+}
+
 // Listing Cloud Run services
 function registerListServicesTool(server, options) {
   server.registerTool(
@@ -603,6 +657,7 @@ function registerDeployContainerImageTool(server, options) {
 export {
   registerListProjectsTool,
   registerCreateProjectTool,
+  registerCreateNewWorkspaceTool,
   registerListServicesTool,
   registerGetServiceTool,
   registerGetServiceLogTool,
