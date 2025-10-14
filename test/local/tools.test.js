@@ -12,13 +12,14 @@ describe('registerTools', () => {
 
     registerTools(server);
 
-    assert.strictEqual(server.registerTool.mock.callCount(), 8);
+    assert.strictEqual(server.registerTool.mock.callCount(), 9);
     const toolNames = server.registerTool.mock.calls.map(
       (call) => call.arguments[0]
     );
     assert.deepStrictEqual(
       toolNames.sort(),
       [
+        'create_new_workspace',
         'create_project',
         'deploy_container_image',
         'deploy_file_contents',
@@ -134,6 +135,80 @@ describe('registerTools', () => {
           {
             type: 'text',
             text: 'Successfully created GCP project with ID "generated-project". You can now use this project ID for deployments.',
+          },
+        ],
+      });
+    });
+  });
+
+  describe('create_new_workspace', () => {
+    it('should create a workspace with a provided name', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/projects.js': {
+            createProjectAndAttachBilling: (workspaceName) =>
+              Promise.resolve({
+                projectId: workspaceName,
+                billingMessage: 'billing message',
+              }),
+          },
+        }
+      );
+
+      registerTools(server, { gcpCredentialsAvailable: true });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'create_new_workspace'
+      ).arguments[2];
+      const result = await handler({ workspaceName: 'my-workspace' });
+
+      assert.deepStrictEqual(result, {
+        content: [
+          {
+            type: 'text',
+            text: 'Successfully created workspace with ID "my-workspace". You can now use this workspace ID for deployments.',
+          },
+        ],
+      });
+    });
+
+    it('should create a workspace with a generated id', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/projects.js': {
+            createProjectAndAttachBilling: () =>
+              Promise.resolve({
+                projectId: 'generated-workspace',
+                billingMessage: 'billing message',
+              }),
+          },
+        }
+      );
+
+      registerTools(server, { gcpCredentialsAvailable: true });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'create_new_workspace'
+      ).arguments[2];
+      const result = await handler({});
+
+      assert.deepStrictEqual(result, {
+        content: [
+          {
+            type: 'text',
+            text: 'Successfully created workspace with ID "generated-workspace". You can now use this workspace ID for deployments.',
           },
         ],
       });
