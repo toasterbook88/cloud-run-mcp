@@ -38,6 +38,7 @@ Deploy from agent SDKs, like the [Google Gen AI SDK](https://ai.google.dev/gemin
 - `deploy-local-folder`\*: Deploys a local folder to a Google Cloud Run service.
 - `list-projects`\*: Lists available GCP projects.
 - `create-project`\*: Creates a new GCP project and attach it to the first available billing account. A project ID can be optionally specified.
+- `create-workspace`\*: Creates a complete Cloud Run workspace including a new GCP project with billing. This is a comprehensive setup that prepares everything needed to start deploying to Cloud Run.
 
 _\* only available when running locally_
 
