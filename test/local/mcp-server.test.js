@@ -33,6 +33,7 @@ describe('MCP Server in stdio mode', () => {
       toolNames.sort(),
       [
         'create_project',
+        'create_workspace',
         'deploy_container_image',
         'deploy_file_contents',
         'deploy_local_folder',

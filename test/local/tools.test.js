@@ -12,7 +12,7 @@ describe('registerTools', () => {
 
     registerTools(server);
 
-    assert.strictEqual(server.registerTool.mock.callCount(), 8);
+    assert.strictEqual(server.registerTool.mock.callCount(), 9);
     const toolNames = server.registerTool.mock.calls.map(
       (call) => call.arguments[0]
     );
@@ -20,6 +20,7 @@ describe('registerTools', () => {
       toolNames.sort(),
       [
         'create_project',
+        'create_workspace',
         'deploy_container_image',
         'deploy_file_contents',
         'deploy_local_folder',
@@ -134,6 +135,86 @@ describe('registerTools', () => {
           {
             type: 'text',
             text: 'Successfully created GCP project with ID "generated-project". You can now use this project ID for deployments.',
+          },
+        ],
+      });
+    });
+  });
+
+  describe('create_workspace', () => {
+    it('should create a workspace with provided parameters', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/workspace.js': {
+            createWorkspace: (projectId, workspaceName) =>
+              Promise.resolve({
+                projectId: projectId || 'generated-project',
+                workspaceName:
+                  workspaceName || projectId || 'generated-project',
+                billingMessage: 'Billing attached successfully.',
+              }),
+          },
+        }
+      );
+
+      registerTools(server, { gcpCredentialsAvailable: true });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'create_workspace'
+      ).arguments[2];
+      const result = await handler({
+        projectId: 'my-workspace-project',
+        workspaceName: 'My Workspace',
+      });
+
+      assert.deepStrictEqual(result, {
+        content: [
+          {
+            type: 'text',
+            text: 'Successfully created Cloud Run workspace "My Workspace" with project ID "my-workspace-project".\n\nBilling attached successfully.\n\nYour workspace is ready! You can now deploy services to this project.',
+          },
+        ],
+      });
+    });
+
+    it('should create a workspace with auto-generated values', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      };
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/cloud-api/workspace.js': {
+            createWorkspace: () =>
+              Promise.resolve({
+                projectId: 'auto-generated-id',
+                workspaceName: 'auto-generated-id',
+                billingMessage: 'No billing accounts available.',
+              }),
+          },
+        }
+      );
+
+      registerTools(server, { gcpCredentialsAvailable: true });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'create_workspace'
+      ).arguments[2];
+      const result = await handler({});
+
+      assert.deepStrictEqual(result, {
+        content: [
+          {
+            type: 'text',
+            text: 'Successfully created Cloud Run workspace "auto-generated-id" with project ID "auto-generated-id".\n\nNo billing accounts available.\n\nYour workspace is ready! You can now deploy services to this project.',
           },
         ],
       });

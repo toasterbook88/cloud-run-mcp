@@ -25,6 +25,7 @@ import {
   getServiceLogs,
 } from '../lib/cloud-api/run.js';
 import { deploy, deployImage } from '../lib/deployment/deployer.js';
+import { createWorkspace } from '../lib/cloud-api/workspace.js';
 
 function createProgressCallback(sendNotification) {
   return (progress) => {
@@ -133,6 +134,82 @@ function registerCreateProjectTool(server, options) {
         };
       }
     })
+  );
+}
+
+// Tool to create a new workspace
+function registerCreateWorkspaceTool(server, options) {
+  server.registerTool(
+    'create_workspace',
+    {
+      description:
+        'Creates a complete Cloud Run workspace including a new GCP project with billing. This is a comprehensive setup that prepares everything needed to start deploying to Cloud Run.',
+      inputSchema: {
+        projectId: z
+          .string()
+          .optional()
+          .describe(
+            'Optional. The desired ID for the new GCP project. If not provided, an ID will be auto-generated.'
+          ),
+        workspaceName: z
+          .string()
+          .optional()
+          .describe(
+            'Optional. A friendly name for the workspace. If not provided, the project ID will be used.'
+          ),
+      },
+    },
+    gcpTool(
+      options.gcpCredentialsAvailable,
+      async ({ projectId, workspaceName }) => {
+        if (
+          projectId !== undefined &&
+          (typeof projectId !== 'string' || projectId.trim() === '')
+        ) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: If provided, Project ID must be a non-empty string.',
+              },
+            ],
+          };
+        }
+        if (
+          workspaceName !== undefined &&
+          (typeof workspaceName !== 'string' || workspaceName.trim() === '')
+        ) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Error: If provided, Workspace Name must be a non-empty string.',
+              },
+            ],
+          };
+        }
+        try {
+          const result = await createWorkspace(projectId, workspaceName);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Successfully created Cloud Run workspace "${result.workspaceName}" with project ID "${result.projectId}".\n\n${result.billingMessage}\n\nYour workspace is ready! You can now deploy services to this project.`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error creating workspace: ${error.message}`,
+              },
+            ],
+          };
+        }
+      }
+    )
   );
 }
 
@@ -603,6 +680,7 @@ function registerDeployContainerImageTool(server, options) {
 export {
   registerListProjectsTool,
   registerCreateProjectTool,
+  registerCreateWorkspaceTool,
   registerListServicesTool,
   registerGetServiceTool,
   registerGetServiceLogTool,
